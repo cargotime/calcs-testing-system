@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  db:
+    user: "1000:50"
+    container_name: mysql-calcs-testing-system
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - ./dbdata:/var/lib/mysql/
+    ports:
+      - ${DB_PORT}:${DB_PORT}
