@@ -6,7 +6,7 @@ services:
     build: 
       context: .
     env_file:
-      - .env
+      - .env.development
     volumes:
       - .:/calcs-testing-system
       - /calcs-testing-system/node_modules
@@ -28,7 +28,7 @@ services:
     volumes:
       - mysqldata:/var/lib/mysql/
     ports:
-      - ${DB_PORT}:${DB_PORT}
+      - ${DB_PORT}:3306
 
 volumes:
   mysqldata:

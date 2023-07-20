@@ -16,7 +16,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         entities: [],
         synchronize: true,
       }),
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
   ],
   exports: [],

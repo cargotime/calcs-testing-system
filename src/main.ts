@@ -10,7 +10,7 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   app.useGlobalInterceptors(new LoggerErrorInterceptor());
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
-  
+
   await app.listen(PORT, () => {
     console.log(`App started on port ${PORT}`);
   });

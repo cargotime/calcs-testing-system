@@ -4,13 +4,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './server/database/database.module';
 import { AppService } from './app.service';
-import { AppController } from "./app.controller";
-import { WebSocketModule } from "./server/socket/websocket.module";
+import { AppController } from './app.controller';
+import { WebSocketModule } from './server/socket/websocket.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env',
+      envFilePath: `.env.${process.env.NODE_ENV}`,
       isGlobal: true,
     }),
     LoggerModule.forRoot({
