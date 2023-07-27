@@ -22,6 +22,7 @@
     "compose:prod": "docker-compose --env-file .env.production up"
   },
   "dependencies": {
+    "@nestjs/axios": "^3.0.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
@@ -30,6 +31,7 @@
     "@nestjs/schedule": "^3.0.1",
     "@nestjs/typeorm": "^10.0.0",
     "@nestjs/websockets": "^10.1.0",
+    "axios": "^1.4.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "cross-env": "^7.0.3",

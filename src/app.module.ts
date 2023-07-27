@@ -3,9 +3,8 @@ import { LoggerModule } from 'nestjs-pino';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './server/database/database.module';
-import { AppService } from './app.service';
-import { AppController } from './app.controller';
-import { WebSocketModule } from './server/socket/websocket.module';
+import { WebSocketModule } from './server/websocket/websocket.module';
+import { ConnectionCheckerModule } from './server/jobs/connection-checker/connectionChecker.module';
 
 @Module({
   imports: [
@@ -23,8 +22,9 @@ import { WebSocketModule } from './server/socket/websocket.module';
     ScheduleModule.forRoot(),
     DatabaseModule,
     WebSocketModule,
+    ConnectionCheckerModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
