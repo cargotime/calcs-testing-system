@@ -37,3 +37,6 @@ lerna-debug.log*
 # environmental variables
 .env.development
 .env.production
+
+# database data
+mysql/db_data

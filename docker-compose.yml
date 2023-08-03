@@ -1,5 +1,8 @@
 version: '3.8'
 
+networks:
+  default:
+
 services:
   main:
     container_name: main
@@ -11,24 +14,24 @@ services:
       - .:/calcs-testing-system
       - /calcs-testing-system/node_modules
     ports:
-      - ${PORT}:${PORT}
+      - ${APP_LOCAL_PORT}:${APP_DOCKER_PORT}
       - 9229:9229
     command: npm run start:dev
     depends_on:
       - mysql
+    networks:
+      - default
     
   mysql:
     container_name: mysql
-    image: mysql:8.0
-    environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
-      MYSQL_PASSWORD: ${DB_PASS}
+    build: ./mysql
     volumes:
-      - mysqldata:/var/lib/mysql/
+      - ./mysql/db_data:/var/lib/mysql
+    restart: always
     ports:
-      - ${DB_PORT}:3306
+      - ${DB_LOCAL_PORT}:${DB_DOCKER_PORT}
+    networks:
+      - default
 
 volumes:
-  mysqldata:
+  mysql:
