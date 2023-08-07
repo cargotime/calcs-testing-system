@@ -1,4 +1,4 @@
-FROM mysql:8.0
+FROM mysql:8.0.33-debian
 
 ENV MYSQL_ROOT_PASSWORD=root
 
