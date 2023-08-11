@@ -26,10 +26,10 @@ DROP TABLE IF EXISTS `company`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `company` (
-  `company_id` int NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `url` varchar(255) NOT NULL,
-  PRIMARY KEY (`company_id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -41,16 +41,16 @@ DROP TABLE IF EXISTS `job`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `job` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `is_passed` tinyint NOT NULL,
   `logbook_id` int DEFAULT NULL,
   `company_id` int DEFAULT NULL,
-  `job_id` int NOT NULL AUTO_INCREMENT,
   `error_msg` varchar(255) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`job_id`),
+  PRIMARY KEY (`id`),
   KEY `FK_e7c9a7878d41b2e659206df5322` (`logbook_id`),
   KEY `FK_51cb12c924d3e8c7465cc8edff2` (`company_id`),
-  CONSTRAINT `FK_51cb12c924d3e8c7465cc8edff2` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`),
-  CONSTRAINT `FK_e7c9a7878d41b2e659206df5322` FOREIGN KEY (`logbook_id`) REFERENCES `logbook` (`logbook_id`)
+  CONSTRAINT `FK_51cb12c924d3e8c7465cc8edff2` FOREIGN KEY (`company_id`) REFERENCES `company` (`id`),
+  CONSTRAINT `FK_e7c9a7878d41b2e659206df5322` FOREIGN KEY (`logbook_id`) REFERENCES `logbook` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -62,10 +62,10 @@ DROP TABLE IF EXISTS `logbook`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `logbook` (
+  `id` int NOT NULL AUTO_INCREMENT,
   `date` datetime NOT NULL,
-  `logbook_id` int NOT NULL AUTO_INCREMENT,
   `job_type` varchar(255) NOT NULL,
-  PRIMARY KEY (`logbook_id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

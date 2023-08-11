@@ -11,7 +11,7 @@ import { CompanyEntity } from './company.entity';
 @Entity('job')
 export class JobEntity {
   @PrimaryGeneratedColumn({ type: 'int' })
-  job_id: number;
+  id: number;
 
   @Column({ type: 'boolean' })
   is_passed: boolean;

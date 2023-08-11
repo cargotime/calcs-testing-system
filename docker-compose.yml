@@ -21,6 +21,7 @@ services:
       - calcs_testing_system_mysql
     networks:
       - calc-nest_calc_network
+    tty: true
     
   calcs_testing_system_mysql:
     container_name: calcs_testing_system_mysql
@@ -31,7 +32,7 @@ services:
       - ./mysql/db_data:/var/lib/mysql
     restart: always
     ports:
-      - ${DB_DOCKER_PORT}:${DB_PORT}
+      - ${DB_PORT}:${DB_DOCKER_PORT}
     networks:
       - calc-nest_calc_network
 

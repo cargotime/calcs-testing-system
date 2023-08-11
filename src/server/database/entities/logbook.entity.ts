@@ -4,7 +4,7 @@ import { JobEntity } from './job.entity';
 @Entity('logbook')
 export class LogbookEntity {
   @PrimaryGeneratedColumn({ type: 'int' })
-  logbook_id: number;
+  id: number;
 
   @Column({ type: 'varchar', width: 200 })
   job_type: string;
