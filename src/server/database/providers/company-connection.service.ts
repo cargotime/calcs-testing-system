@@ -29,7 +29,7 @@ export class CompanyDBConnection {
             is_passed: false,
             logbook: {
               id: logbookId,
-            }
+            },
           },
         },
       });
