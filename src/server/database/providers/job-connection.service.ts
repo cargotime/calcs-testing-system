@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CompanyEntity } from '../entities/company.entity';
 import { JobEntity } from '../entities/job.entity';
+import { LogbookEntity } from '../entities/logbook.entity';
 
 @Injectable()
 export class JobDBConnection {
@@ -11,11 +12,17 @@ export class JobDBConnection {
     private jobRepository: Repository<JobEntity>,
   ) {}
 
-  async createJob(): Promise<JobEntity> {
-    return this.jobRepository.create();
+  async create(
+    company: CompanyEntity,
+    logbook: LogbookEntity,
+  ): Promise<JobEntity> {
+    return this.jobRepository.create({
+      company: company,
+      logbook: logbook,
+    });
   }
 
-  async updateJob(job: JobEntity): Promise<JobEntity> {
+  async save(job: JobEntity): Promise<JobEntity> {
     return this.jobRepository.save(job);
   }
 

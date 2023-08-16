@@ -10,15 +10,15 @@ export class CompanyDBConnection {
     private companyRepository: Repository<CompanyEntity>,
   ) {}
 
-  async updateAllCompanies(companies: any[]) {
+  async updateAll(companies: any[]) {
     await this.companyRepository.upsert(companies, ['id']);
   }
 
-  async getAllCompanies(): Promise<CompanyEntity[]> {
+  async getAll(): Promise<CompanyEntity[]> {
     return this.companyRepository.find();
   }
 
-  async getUnavailibleCompanies(): Promise<CompanyEntity[]> {
+  async getUnavailible(logbookId: number): Promise<CompanyEntity[]> {
     const unavailibleCompanies: Promise<CompanyEntity[]> =
       this.companyRepository.find({
         relations: {
@@ -27,6 +27,9 @@ export class CompanyDBConnection {
         where: {
           jobs: {
             is_passed: false,
+            logbook: {
+              id: logbookId,
+            }
           },
         },
       });

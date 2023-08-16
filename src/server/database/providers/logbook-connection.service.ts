@@ -10,11 +10,10 @@ export class LogbookDBConnection {
     private logbookRepository: Repository<LogbookEntity>,
   ) {}
 
-  async createLogbook(): Promise<LogbookEntity> {
-    return this.logbookRepository.create();
-  }
-
-  async updateLogbook(logbook: LogbookEntity): Promise<LogbookEntity> {
-    return this.logbookRepository.save(logbook);
+  async save(date: Date, job_type: string): Promise<LogbookEntity> {
+    return this.logbookRepository.save({
+      date: date,
+      job_type: job_type,
+    });
   }
 }

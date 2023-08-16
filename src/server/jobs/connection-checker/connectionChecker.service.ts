@@ -1,4 +1,4 @@
-import { Get, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import axios, { AxiosError } from 'axios';
 import { CompanyEntity } from 'src/server/database/entities/company.entity';
 import { JobEntity } from 'src/server/database/entities/job.entity';
@@ -16,7 +16,7 @@ export class ConnectionCheckerService {
     private logbookProvider: LogbookDBConnection,
   ) {}
 
-  private async checkCompanyAvailability(url: string): Promise<number> {
+  private async checkWebsiteAvailability(url: string): Promise<number> {
     try {
       const response = await axios.get(url);
       return response.status;
@@ -27,77 +27,114 @@ export class ConnectionCheckerService {
     }
   }
 
-  private async updateCompanyList(): Promise<void> {
+  private async updateCompanies(): Promise<CompanyEntity[]> {
     try {
       const response = await axios.get('http://calc_nest_core:3002/companies');
       const companies = await response.data;
-      
-      await this.companyProvider.updateAllCompanies(companies);
-  
+
+      await this.companyProvider.updateAll(companies);
+
+      return await this.companyProvider.getAll();
     } catch (error) {
-      console.error('Ошибка при обновлении списка компаний: ', error);
+      console.error('Ошибка при обновлении компаний: ', error);
     }
   }
 
-  private async startJob(): Promise<void> {
-    const companies: CompanyEntity[] = await this.companyProvider.getAllCompanies();
-    const logbook: LogbookEntity = await this.logbookProvider.createLogbook();
-    logbook.date = new Date();
-    logbook.job_type = 'Проверка соединения';
-    await this.logbookProvider.updateLogbook(logbook);
+  private async getDisabledCompanies(): Promise<any[]> {
+    try {
+      const response = await axios.get('http://calc_nest_core:3002/companies/disabled');
+      const companies = await response.data;
+
+      return companies;
+    } catch (error) {
+      console.error(
+        'Ошибка при получении списка отключенных компаний: ',
+        error,
+      );
+    }
+  }
+
+  private async startJob(
+    companies: CompanyEntity[],
+    logbook: LogbookEntity,
+  ): Promise<void> {
     for (const company of companies) {
       try {
-        const job: JobEntity = await this.jobProvider.createJob();
-        job.company = company;
-        job.logbook = logbook;
-        const responseCode = await this.checkCompanyAvailability(company.url);
+        const job: JobEntity = await this.jobProvider.create(
+          company,
+          logbook,
+        );
+        const responseCode = await this.checkWebsiteAvailability(company.url);
         if (responseCode === 200) {
           job.is_passed = true;
         } else {
           job.is_passed = false;
-          job.error_msg = `Не удалось установить соединение: код ошибки ${responseCode}`;
+          job.error_msg = `Не удалось установить соединение: код ошибки - ${responseCode}`;
         }
-        await this.jobProvider.updateJob(job);
+        await this.jobProvider.save(job);
       } catch (error) {
         console.error(
-          `Error updating database for company ${company.name}: ${error}`,
+          `Ошибка обновления базы данных для компании ${company.name}: ${error}`,
         );
       }
     }
   }
 
-  private async sendTelegramMessage(): Promise<void> {
-    try {
-      const unavailibleCompanies =
-        await this.companyProvider.getUnavailibleCompanies();
-      let report = 'Список недоступных сайтов и причины их недоступности:\n';
-      for (const company of unavailibleCompanies) {
-        const error_msg = await this.jobProvider.getErrorForCompany(company);
-        report += `Сайт: ${company.name}, Причина: ${error_msg}\n`;
+  private async disableCompanies(disabledCompanies: any[], companiesToDisable: CompanyEntity[]) {
+    const disabledCompaniesIds = disabledCompanies.map(company => company.company);
+    const companiesToDisableIds = companiesToDisable.map(company => company.id);
+    for (const id of companiesToDisableIds) {
+      if (id in disabledCompaniesIds !== true) {
+        try {
+          await axios.post(`http://calc_nest_core:3002/companies/:${id}/disable`, {companyId: id});
+        } catch (error) {
+          console.error('Ошибка при отправке запроса на отключение компании: ', error);
+        }   
       }
-      // TODO: Реализовать отправку сообщения в телеграм-чат
-    } catch (error) {
-      console.error(`Error sending Telegram message: ${error}`);
     }
   }
 
-  private async sendUnavailableCompaniesToServer(): Promise<void> {
-    const unavailibleCompanies =
-      await this.companyProvider.getUnavailibleCompanies();
-    // Код для отправки списка недоступных сайтов на calcs-nest
-    // ...
-  }
+  // private async sendTelegramMessage(): Promise<void> {
+  //   try {
+  //     const unavailibleCompanies =
+  //       await this.companyProvider.getUnavailibleCompanies();
+  //     let report = 'Список недоступных сайтов и причины их недоступности:\n';
+  //     for (const company of unavailibleCompanies) {
+  //       const error_msg = await this.jobProvider.getErrorForCompany(company);
+  //       report += `Сайт: ${company.name}, Причина: ${error_msg}\n`;
+  //     }
+  //     // TODO: Реализовать отправку сообщения в телеграм-чат
+  //   } catch (error) {
+  //     console.error(`Error sending Telegram message: ${error}`);
+  //   }
+  // }
 
   @Cron('0 */1 * * * *')
-  async checkConnections(): Promise<void> {
+  async checkConnection(): Promise<void> {
     console.log('Check started');
     try {
-      await this.updateCompanyList();
-      await this.startJob(); 
+      const date: Date = new Date();
+      const logbook: LogbookEntity = await this.logbookProvider.save(
+        date,
+        'Проверка соединения',
+      );
+      const companyList: CompanyEntity[] = await this.updateCompanies();
+
+      const disabledCompanyList = await this.getDisabledCompanies();
+      console.log('disabledCompanyList: ' + disabledCompanyList.map(company => company.company));
+
+      await this.startJob(companyList, logbook);
+
+      const companiesToDisable: CompanyEntity[] = await this.companyProvider.getUnavailible(logbook.id);
+      console.log('companiesToDisable: ' + companiesToDisable.map(company => company.id));
+
+      await this.disableCompanies(disabledCompanyList, companiesToDisable);
+
+      //await this.logbookProvider.saveLogbook(logbook);
       //await this.sendUnavailableCompaniesToServer(); // Отправляем список в calcs-nest
       //await this.sendTelegramMessage(); // Отправляем отчет в тг
     } catch (error) {
-      console.error(`Error checking connections: ${error}`);
+      console.error(`Ошибка при проверке соединения: ${error}`);
     }
     console.log('Check ended');
   }
