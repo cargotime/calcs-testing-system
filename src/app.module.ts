@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './server/database/database.module';
 import { WebSocketModule } from './server/websocket/websocket.module';
 import { ConnectionCheckerModule } from './server/jobs/connection-checker/connectionChecker.module';
+import { TelegramAlertBot } from './server/telegram-notifications/alertbot-telegram';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { ConnectionCheckerModule } from './server/jobs/connection-checker/connec
     ConnectionCheckerModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [TelegramAlertBot],
 })
 export class AppModule {}

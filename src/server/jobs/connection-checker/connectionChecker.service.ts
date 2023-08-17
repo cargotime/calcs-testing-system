@@ -7,6 +7,7 @@ import { LogbookEntity } from 'src/server/database/entities/logbook.entity';
 import { CompanyDBConnection } from 'src/server/database/providers/company-connection.service';
 import { JobDBConnection } from 'src/server/database/providers/job-connection.service';
 import { LogbookDBConnection } from 'src/server/database/providers/logbook-connection.service';
+import { TelegramAlertBot } from 'src/server/telegram-notifications/alertbot-telegram';
 
 @Injectable()
 export class ConnectionCheckerService {
@@ -14,6 +15,7 @@ export class ConnectionCheckerService {
     private companyProvider: CompanyDBConnection,
     private jobProvider: JobDBConnection,
     private logbookProvider: LogbookDBConnection,
+    private telegramAlertBot: TelegramAlertBot,
   ) {}
 
   private async checkWebsiteAvailability(url: string): Promise<number> {
@@ -83,7 +85,7 @@ export class ConnectionCheckerService {
     disabledCompanies: any[],
     failedCheckCompanies: CompanyEntity[],
     date: Date,
-  ) {
+  ): Promise<{ companiesToDisable: any[]; companiesToEnable: any[] }> {
     const companiesToDisable = failedCheckCompanies
       .filter(
         (company) =>
@@ -136,22 +138,36 @@ export class ConnectionCheckerService {
         error,
       );
     }
+
+    return {
+      companiesToDisable,
+      companiesToEnable,
+    };
   }
 
-  // private async sendTelegramMessage(): Promise<void> {
-  //   try {
-  //     const unavailibleCompanies =
-  //       await this.companyProvider.getUnavailibleCompanies();
-  //     let report = 'Список недоступных сайтов и причины их недоступности:\n';
-  //     for (const company of unavailibleCompanies) {
-  //       const error_msg = await this.jobProvider.getErrorForCompany(company);
-  //       report += `Сайт: ${company.name}, Причина: ${error_msg}\n`;
-  //     }
-  //     // TODO: Реализовать отправку сообщения в телеграм-чат
-  //   } catch (error) {
-  //     console.error(`Error sending Telegram message: ${error}`);
-  //   }
-  // }
+  private async sendTelegramAlert(
+    disabledCompanies: any[],
+    enabledCompanies: any[],
+  ): Promise<void> {
+    let report = '';
+    if (disabledCompanies.length !== 0) {
+      const disabledCompaniesNames = disabledCompanies
+        .map((company) => company.company.name)
+        .join(', ');
+      report += `\t— были отключены компании: ${disabledCompaniesNames}\n`;
+    }
+    if (enabledCompanies.length !== 0) {
+      const enabledCompaniesNames = enabledCompanies
+        .map((company) => company.company.name)
+        .join(', ');
+      report += `\t— были включены компании: ${enabledCompaniesNames}\n`;
+    }
+    if (report.length !== 0) {
+      await this.telegramAlertBot.alert(
+        `По результатам проверки соединения:\n${report}`,
+      );
+    }
+  }
 
   @Cron('0 */1 * * * *')
   async checkConnection(): Promise<void> {
@@ -164,7 +180,6 @@ export class ConnectionCheckerService {
       );
 
       const companyList: CompanyEntity[] = await this.updateCompanies();
-
       const disabledCompanies = await this.getDisabledCompanies();
 
       await this.startJob(companyList, logbook);
@@ -172,13 +187,13 @@ export class ConnectionCheckerService {
       const failedCheckCompanies: CompanyEntity[] =
         await this.companyProvider.getUnavailible(logbook.id);
 
-      await this.updateDisabledCompanies(
-        disabledCompanies,
-        failedCheckCompanies,
-        date,
-      );
-
-      //await this.sendTelegramMessage(); // Отправляем отчет в тг
+      const { companiesToDisable, companiesToEnable } =
+        await this.updateDisabledCompanies(
+          disabledCompanies,
+          failedCheckCompanies,
+          date,
+        );
+      await this.sendTelegramAlert(companiesToDisable, companiesToEnable);
     } catch (error) {
       console.error(`Ошибка при проверке соединения: ${error}`);
     }
