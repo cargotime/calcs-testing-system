@@ -29,7 +29,7 @@ export class ConnectionCheckerService {
 
   private async updateCompanies(): Promise<CompanyEntity[]> {
     try {
-      const response = await axios.get('http://calc_nest_core:3002/companies');
+      const response = await axios.get(`${process.env.BASE_SERVER_URL}`);
       const companies = await response.data;
 
       await this.companyProvider.updateAll(companies);
@@ -43,7 +43,7 @@ export class ConnectionCheckerService {
   private async getDisabledCompanies(): Promise<any[]> {
     try {
       const response = await axios.get(
-        'http://calc_nest_core:3002/companies/disabled',
+        `${process.env.BASE_SERVER_URL}/disabled`,
       );
       const companies = await response.data;
 
@@ -82,50 +82,59 @@ export class ConnectionCheckerService {
   private async updateDisabledCompanies(
     disabledCompanies: any[],
     failedCheckCompanies: CompanyEntity[],
+    date: Date,
   ) {
-    const disabledCompaniesIds = disabledCompanies.map(
-      (company) => company.company.id,
-    );
-    const failedCheckCompaniesIds = failedCheckCompanies.map(
-      (company) => company.id,
+    const companiesToDisable = failedCheckCompanies
+      .filter(
+        (company) =>
+          !disabledCompanies.some(
+            (disabled) => disabled.company.id === company.id,
+          ),
+      )
+      .map((company) => ({
+        isAutoDeactivated: true,
+        date: date,
+        company: company,
+      }));
+
+    const companiesToEnable = disabledCompanies.filter(
+      (disabled) =>
+        !failedCheckCompanies.some(
+          (company) => disabled.company.id === company.id,
+        ),
     );
 
-    const companiesToDisable = failedCheckCompaniesIds.filter(
-      (id) => !disabledCompaniesIds.includes(id),
+    console.log(
+      'companiesToDisable: ' +
+        companiesToDisable.map((company) => company.company.id),
     );
-    const companiesToEnable = disabledCompaniesIds.filter(
-      (id) => !failedCheckCompaniesIds.includes(id),
+    console.log(
+      'companiesToEnable: ' +
+        companiesToEnable.map((company) => company.company.id),
     );
 
-    //console.log('companiesToDisable: ' + companiesToDisable);
-    //console.log('companiesToEnable: ' + companiesToEnable);
-
-    for (const companyId of companiesToDisable) {
-      try {
+    try {
+      if (companiesToDisable.length !== 0) {
         await axios.post(
-          `http://calc_nest_core:3002/companies/:${companyId}/disable`,
-          { companyId: companyId },
-        );
-      } catch (error) {
-        console.error(
-          'Ошибка при отправке запроса на отключение компании: ',
-          error,
+          `${process.env.BASE_SERVER_URL}/${companiesToDisable}/disable`,
+          {
+            companyList: companiesToDisable,
+          },
         );
       }
-    }
-
-    for (const companyId of companiesToEnable) {
-      try {
+      if (companiesToEnable.length !== 0) {
         await axios.post(
-          `http://calc_nest_core:3002/companies/:${companyId}/enable`,
-          { companyId: companyId },
-        );
-      } catch (error) {
-        console.error(
-          'Ошибка при отправке запроса на включение компании: ',
-          error,
+          `${process.env.BASE_SERVER_URL}/${companiesToEnable}/enable`,
+          {
+            companyList: companiesToEnable,
+          },
         );
       }
+    } catch (error) {
+      console.error(
+        'Ошибка при отправке списка отключенных компаний на сервер: ',
+        error,
+      );
     }
   }
 
@@ -153,26 +162,20 @@ export class ConnectionCheckerService {
         date,
         'Проверка соединения',
       );
+
       const companyList: CompanyEntity[] = await this.updateCompanies();
 
       const disabledCompanies = await this.getDisabledCompanies();
-      // console.log(
-      //   'disabledCompanies: ' +
-      //     disabledCompanies.map((company) => company.company.id),
-      // );
 
       await this.startJob(companyList, logbook);
 
       const failedCheckCompanies: CompanyEntity[] =
         await this.companyProvider.getUnavailible(logbook.id);
-      // console.log(
-      //   'failedCheckCompanies: ' +
-      //     failedCheckCompanies.map((company) => company.id),
-      // );
 
       await this.updateDisabledCompanies(
         disabledCompanies,
         failedCheckCompanies,
+        date,
       );
 
       //await this.sendTelegramMessage(); // Отправляем отчет в тг
