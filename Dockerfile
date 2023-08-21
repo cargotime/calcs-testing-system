@@ -7,7 +7,7 @@ WORKDIR /calcs-testing-system
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 

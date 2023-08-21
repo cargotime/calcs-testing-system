@@ -7,7 +7,10 @@ import { LogbookEntity } from 'src/server/database/entities/logbook.entity';
 import { CompanyDBConnection } from 'src/server/database/providers/company-connection.service';
 import { JobDBConnection } from 'src/server/database/providers/job-connection.service';
 import { LogbookDBConnection } from 'src/server/database/providers/logbook-connection.service';
-import { TelegramAlertBot } from 'src/server/telegram-notifications/alertbot-telegram';
+import {
+  AlertImportance,
+  TelegramAlertBot,
+} from 'src/server/telegram-notifications/alertbot-telegram';
 
 @Injectable()
 export class ConnectionCheckerService {
@@ -58,10 +61,15 @@ export class ConnectionCheckerService {
     }
   }
 
-  private async startJob(
-    companies: CompanyEntity[],
-    logbook: LogbookEntity,
-  ): Promise<void> {
+  private async startJob(companies: CompanyEntity[]): Promise<CompanyEntity[]> {
+    const date: Date = new Date();
+    const logbook: LogbookEntity = await this.logbookProvider.save(
+      date,
+      'Проверка соединения',
+    );
+
+    const failedCheckCompanies: CompanyEntity[] = [];
+
     for (const company of companies) {
       try {
         const job: JobEntity = await this.jobProvider.create(company, logbook);
@@ -71,6 +79,7 @@ export class ConnectionCheckerService {
         } else {
           job.is_passed = false;
           job.error_msg = `Не удалось установить соединение: код ошибки - ${responseCode}`;
+          failedCheckCompanies.push(company);
         }
         await this.jobProvider.save(job);
       } catch (error) {
@@ -79,13 +88,16 @@ export class ConnectionCheckerService {
         );
       }
     }
+
+    return failedCheckCompanies;
   }
 
   private async updateDisabledCompanies(
     disabledCompanies: any[],
     failedCheckCompanies: CompanyEntity[],
-    date: Date,
   ): Promise<{ companiesToDisable: any[]; companiesToEnable: any[] }> {
+    const date: Date = new Date();
+
     const companiesToDisable = failedCheckCompanies
       .filter(
         (company) =>
@@ -169,30 +181,22 @@ export class ConnectionCheckerService {
     }
   }
 
-  @Cron('0 */1 * * * *')
+  @Cron('0 */10 * * * *')
   async checkConnection(): Promise<void> {
     console.log('Check started');
     try {
-      const date: Date = new Date();
-      const logbook: LogbookEntity = await this.logbookProvider.save(
-        date,
-        'Проверка соединения',
-      );
-
       const companyList: CompanyEntity[] = await this.updateCompanies();
       const disabledCompanies = await this.getDisabledCompanies();
-
-      await this.startJob(companyList, logbook);
-
-      const failedCheckCompanies: CompanyEntity[] =
-        await this.companyProvider.getUnavailible(logbook.id);
+      const failedCheckCompanies: CompanyEntity[] = await this.startJob(
+        companyList,
+      );
 
       const { companiesToDisable, companiesToEnable } =
         await this.updateDisabledCompanies(
           disabledCompanies,
           failedCheckCompanies,
-          date,
         );
+
       await this.sendTelegramAlert(companiesToDisable, companiesToEnable);
     } catch (error) {
       console.error(`Ошибка при проверке соединения: ${error}`);

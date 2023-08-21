@@ -11,6 +11,8 @@ services:
       context: .
     env_file:
       - .env.development
+    environment:
+      - DB_HOST=calcs_testing_system_mysql
     volumes:
       - .:/calcs-testing-system
       - /calcs-testing-system/node_modules
@@ -31,7 +33,7 @@ services:
       - ./mysql/db_data:/var/lib/mysql
     restart: always
     ports:
-      - ${DB_PORT}:${DB_DOCKER_PORT}
+      - ${DB_PORT}:3306
     networks:
       - calc-nest_calc_network
 

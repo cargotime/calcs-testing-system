@@ -17,22 +17,4 @@ export class CompanyDBConnection {
   async getAll(): Promise<CompanyEntity[]> {
     return this.companyRepository.find();
   }
-
-  async getUnavailible(logbookId: number): Promise<CompanyEntity[]> {
-    const unavailibleCompanies: Promise<CompanyEntity[]> =
-      this.companyRepository.find({
-        relations: {
-          jobs: true,
-        },
-        where: {
-          jobs: {
-            is_passed: false,
-            logbook: {
-              id: logbookId,
-            },
-          },
-        },
-      });
-    return unavailibleCompanies;
-  }
 }
