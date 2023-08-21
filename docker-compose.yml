@@ -1,17 +1,41 @@
 version: '3.8'
 
+networks:
+  calc-nest_calc_network:
+    external: true
+
 services:
-  db:
-    user: "1000:50"
-    container_name: mysql-calcs-testing-system
-    image: mysql:8.0
-    restart: always
+  calcs_testing_system:
+    container_name: calcs_testing_system
+    build: 
+      context: .
+    env_file:
+      - .env.development
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
-      MYSQL_PASSWORD: ${DB_PASS}
+      - DB_HOST=calcs_testing_system_mysql
     volumes:
-      - ./dbdata:/var/lib/mysql/
+      - .:/calcs-testing-system
+      - /calcs-testing-system/node_modules
     ports:
-      - ${DB_PORT}:${DB_PORT}
+      - ${APP_PORT}:${APP_PORT}
+    command: npm run start:dev
+    depends_on:
+      - calcs_testing_system_mysql
+    networks:
+      - calc-nest_calc_network
+    
+  calcs_testing_system_mysql:
+    container_name: calcs_testing_system_mysql
+    build: ./mysql
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ./mysql/db_data:/var/lib/mysql
+    restart: always
+    ports:
+      - ${DB_PORT}:3306
+    networks:
+      - calc-nest_calc_network
+
+volumes:
+  mysql:

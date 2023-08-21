@@ -35,7 +35,7 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # environmental variables
-*.env
+.env*
 
 # database data
-/dbdata
+mysql/db_data
